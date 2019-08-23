@@ -28,13 +28,13 @@ You've just stepped into the middle of a conversation on a Github issue and ther
 - Leaderboard *must have* 9 users listed (except when the number of completed courses is lower than that).
 - You *should* display 3 users with the **highest** score of a given course.
 - You *should* display 3 users with the **lowest** score of a given course.
-- You *should* display currently logged-in user's surrounded by 2 other course participants.
-- The middle tier consists of user(s) with position equal to the median value of the size of the smaller range between the first and the last tier (and others around) 
+- You *should* display currently logged-in users surrounded by 2 other course participants.
+- The middle tier consists of user(s) with a position equal to the median value of the size of the smaller range between the first and the last tier (and others around) 
     - Except when the logged user is *not* listed among the first/last tiers. in such case, logged user *must* be in the middle tier (surrounded by 2 others).
     - Example: "Colin" is listed because the median value of the range **[5 .. 34]** is 14.5 (which is rounded up to **15**).
-- Logged user *must have* higher precedence when compared to users with the same score.
-- Logged user *must have* a slightly different background color from other users in the leaderboard.
-- Logged user *must be* in bold text.
+- Logged-in user *must have* higher precedence when compared to users with the same score.
+- Logged-in user *must have* a slightly different background color from other users in the leaderboard.
+- Logged-in user *must be* in bold text.
 - Non-sequential positions *must be* separated by a line, just like in the image.
 
 
@@ -123,8 +123,8 @@ You can use services like GitHub or Bitbucket.
 Ideally, you could make an initial commit with the files of this code challenge and then build your solution upon that.
 
 You can submit your solution in 2 ways:
- 1. Use **public** git repository and send us the link.
- 2. Use **private** git repository and send us the link (if you don't want to create a public repository for personal reasons).
+ 1. Use a **public** git repository and send us the link.
+ 2. Use a **private** git repository and send us the link (if you don't want to create a public repository for personal reasons).
  In this case, please provide read access for
  the following user: `idf-bot` (valid for [GitHub](https://github.com/idf-bot) and [Bitbucket](https://bitbucket.org/idf-bot/)).
 
@@ -133,3 +133,6 @@ Hint: Either GitHub or Bitbucket allow you to create a private repository for fr
 PS: We at IDF would greatly appreciate if you give us some feedback about this code-challenge :) 
 
 🦄
+🦄🦄
+🦄🦄🦄
+🦄🦄🦄🦄

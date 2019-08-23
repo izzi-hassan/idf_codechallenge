@@ -7,6 +7,12 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 
+use App\Events\QuizAnswerEvaluated;
+use App\Events\CourseLeaderboardChanged;
+
+use App\Listeners\UpdateCourseLeaderboard;
+use App\Listeners\CheckLeaderboardChange;
+
 class EventServiceProvider extends ServiceProvider
 {
     /**
@@ -18,6 +24,12 @@ class EventServiceProvider extends ServiceProvider
         Registered::class => [
             SendEmailVerificationNotification::class,
         ],
+        QuizAnswerEvaluated::class => [
+            CheckLeaderboardChange::class,
+        ],
+        CourseLeaderboardChanged::class => [
+            UpdateCourseLeaderboard::class,
+        ]
     ];
 
     /**

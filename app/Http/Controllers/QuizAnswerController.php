@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Quiz;
 use App\QuizAnswer;
+use App\GraderInterface;
 use Illuminate\Http\RedirectResponse;
 
 class QuizAnswerController extends Controller
@@ -27,5 +28,12 @@ class QuizAnswerController extends Controller
             'slug' => $quiz->lesson->course->slug,
             'number' => $quiz->lesson->number,
         ]));
+    }
+
+    public function grade(QuizAnswer $quizAnswer, int $score): RedirectResponse
+    {
+        $quizAnswer->grade($score, request()->user());
+
+        return redirect(route('home'));
     }
 }

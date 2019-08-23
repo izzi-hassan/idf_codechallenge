@@ -53,7 +53,8 @@ class QuizAnswersSeeder extends Seeder
     private function generateAnswersForEnrolment(CourseEnrollment $enrollment)
     {
         $allQuizesFromCourse = $enrollment->course->quizzes;
-        $quizzesToGenerateAnswers = $allQuizesFromCourse->take(random_int(0, $allQuizesFromCourse->count()));
+        //$quizzesToGenerateAnswers = $allQuizesFromCourse->take(random_int(0, $allQuizesFromCourse->count()));
+        $quizzesToGenerateAnswers = $allQuizesFromCourse;
 
         $quizzesToGenerateAnswers->each(function (Quiz $quiz) use ($enrollment) {
             factory(QuizAnswer::class)->create([

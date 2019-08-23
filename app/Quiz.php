@@ -33,4 +33,12 @@ final class Quiz extends Model
     {
         return $this->answers()->where('user_id', $user->getAuthIdentifier())->first();
     }
+
+    public function isAnsweredBy(Authenticatable $user): bool
+    {
+        /* We consider a quiz answered only if it has been graded with a score > 0 */
+        $answer = $this->getAnswerOf($user);
+        
+        return isset($answer) && isset($answer->score) && $answer->score > 0;
+    }
 }

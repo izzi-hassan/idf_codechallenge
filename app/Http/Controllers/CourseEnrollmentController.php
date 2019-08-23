@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Course;
 use App\CourseEnrollment;
+
+use App\Events\CourseLeaderboardChanged;
+
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Http\Response;
 
@@ -26,7 +29,9 @@ class CourseEnrollmentController extends Controller
             return view('courses.show', ['course' => $course]);
         }
 
-        return view('courseEnrollments.show', ['enrollment' => $enrollment]);
+        $leaderboard = $course->leaderboard;
+
+        return view('courseEnrollments.show', ['enrollment' => $enrollment, 'leaderboard' => $leaderboard]);
     }
 
     public function store(string $slug)

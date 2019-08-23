@@ -39,3 +39,12 @@ Route::post('/quiz-answers/{id}', 'QuizAnswerController@store')
 
 Route::get('/random-login', 'Auth\LoginController@loginAsRandomUser')
     ->name('auth.randomLogin');
+
+/* For Testing */
+Route::get('/grade/{quizAnswer}/{score}', 'QuizAnswerController@grade')
+    ->name('quizAnswers.grade')
+    ->middleware('auth');
+
+Route::get('/user', function(Request $request) {
+    return response()->json(auth()->user());
+});

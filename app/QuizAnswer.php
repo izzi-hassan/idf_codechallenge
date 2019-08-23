@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $score
  *
  * @property Quiz $quiz
+ * @property User $user
  */
 final class QuizAnswer extends Model
 {
@@ -29,11 +30,16 @@ final class QuizAnswer extends Model
         return $this->belongsTo(Quiz::class);
     }
 
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function grade(int $score, GraderInterface $gradedBy): void
     {
         $maxScore = $this->quiz->max_score;
         if ($score > $this->quiz->max_score) {
-            throw new \OutOfBoundsException("Score can not be higher that maximum for this quiz (max={$maxScore})");
+            throw new \OutOfBoundsException("Score can not be higher than the maximum for this quiz (max={$maxScore})");
         }
 
         event(new QuizAnswerEvaluating($this, $score, $gradedBy));

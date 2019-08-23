@@ -2,6 +2,8 @@
 
 namespace App;
 
+use App\Course;
+
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -25,7 +27,7 @@ class User extends Authenticatable implements GraderInterface
      * @var array
      */
     protected $fillable = [
-        'name', 'email', 'password',
+        'name', 'email', 'password', 'api_token'
     ];
 
     /**
@@ -36,6 +38,10 @@ class User extends Authenticatable implements GraderInterface
         'password', 'remember_token',
     ];
 
+    protected $with = [
+        'country'
+    ];
+
     public function country(): BelongsTo
     {
         return $this->belongsTo(Country::class);
@@ -44,5 +50,13 @@ class User extends Authenticatable implements GraderInterface
     public function courseEnrollments(): HasMany
     {
         return $this->hasMany(CourseEnrollment::class);
+    }
+
+    public function courseScore(Course $course): int
+    {
+        return $course->quizzes->sum(function($quiz)
+        {
+            return $quiz->getAnswerOf($this)->score;
+        });
     }
 }
