@@ -1728,6 +1728,32 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 /* harmony default export */ __webpack_exports__["default"] = ({
   name: 'CategoryBoard',
   props: ['slots']
@@ -1819,11 +1845,11 @@ function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
       var countryRanks = getRanks(_.filter(_.cloneDeep(rankings), {
         'country_id': this.user.country_id
       }), this.user.id);
+      this.countryRanks = countryRanks.ranks;
       /* Get interesting users globally */
 
       var worldRanks = getRanks(_.cloneDeep(rankings), this.user.id);
-      this.countryRanks = [].concat(_toConsumableArray(countryRanks.topTier), _toConsumableArray(countryRanks.middleTier), _toConsumableArray(countryRanks.bottomTier));
-      this.worldRanks = [].concat(_toConsumableArray(worldRanks.topTier), _toConsumableArray(worldRanks.middleTier), _toConsumableArray(worldRanks.bottomTier));
+      this.worldRanks = worldRanks.ranks;
       /* User's ranks */
 
       this.userCountryRank = countryRanks.loggedInUser.rank;
@@ -1837,19 +1863,24 @@ function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 });
 
 function getRanks(rankings, loggedInUserId) {
+  var loggedInUser = _.find(rankings, {
+    id: loggedInUserId
+  });
+
   rankings = _.forEach(rankings, function (item, key) {
     item.rank = key + 1;
-    item.pointsDifference = key == 0 ? 0 : item.pointsDifference = rankings[key - 1].courseScore - item.courseScore;
+    item.pointsDifference = item.courseScore - loggedInUser.courseScore;
+    item.pointsDifference = item.pointsDifference > 0 ? item.pointsDifference : false;
+
+    if (item.id == loggedInUserId) {
+      item.isLoggedInUser = true;
+    }
   });
   /* Get the groups we are interested in */
 
   var topThree = _.take(rankings, 3);
 
   var bottomThree = _.takeRight(rankings, 3);
-
-  var loggedInUser = _.find(rankings, {
-    id: loggedInUserId
-  });
 
   var loggedInUserThree = loggedInUser.rank == 1 || loggedInUser.rank == 2 ? topThree : _.slice(rankings, loggedInUser.rank - 2, loggedInUser.rank + 1);
   var topTier = [];
@@ -1872,8 +1903,9 @@ function getRanks(rankings, loggedInUserId) {
   }
 
   if (middleTier.length == 0) {
-    // Need Median
-    var middleTierLength = 9 - topTier.length - bottomTier.length;
+    // How many middle tier users needed
+    var middleTierLength = 9 - topTier.length - bottomTier.length; // Get Median User
+
     var medianRank = Math.ceil(bottomTier[0].rank - topTier[topTier.length - 1].rank / 2);
     middleTier.push(rankings[(_readOnlyError("medianRank"), --medianRank)]); // Fill out middle tier
 
@@ -1892,15 +1924,12 @@ function getRanks(rankings, loggedInUserId) {
     }
   }
 
-  console.log('Logged In Three', loggedInUserThree);
-  console.log('Top Tier', topTier);
-  console.log('Middle Tier', middleTier);
-  console.log('Bottom Tier', bottomTier);
+  middleTier[0].nonSequentialStart = true;
+  middleTier[middleTier.length - 1].nonSequentialEnd = true;
+  var ranks = [].concat(_toConsumableArray(topTier), _toConsumableArray(middleTier), _toConsumableArray(bottomTier));
   return {
     loggedInUser: loggedInUser,
-    topTier: topTier,
-    middleTier: middleTier,
-    bottomTier: bottomTier
+    ranks: ranks
   };
 }
 
@@ -6363,7 +6392,7 @@ exports = module.exports = __webpack_require__(/*! ../../../../node_modules/css-
 
 
 // module
-exports.push([module.i, "\n.isLoggedInUser[data-v-3a5ea640] {\n    font-weight: bold;\n}\n", ""]);
+exports.push([module.i, "\nul[data-v-3a5ea640] {\n    padding: 0px;\n}\n.courseRanking__rankItem[data-v-3a5ea640] {\n    display: flex;\n    flex-direction: row;\n    padding: 10px;\n}\n.position[data-v-3a5ea640] {\n    font-size: 28px;\n    color: rgb(132, 132, 132);\n    text-align: right;\n    width: 80px;\n    padding-right: 10px;\n}\n.isLoggedInUser[data-v-3a5ea640] {\n    font-weight: bold;\n}\n.info[data-v-3a5ea640] {\n    font-size: 16px;\n}\n.score[data-v-3a5ea640] {\n    font-size: 10px;\n    color: rgb(132, 132, 132);\n}\n", ""]);
 
 // exports
 
@@ -37847,75 +37876,41 @@ var render = function() {
   var _c = _vm._self._c || _h
   return _c(
     "ul",
-    { staticStyle: { padding: "0px" } },
     _vm._l(_vm.slots, function(slot) {
-      return _c(
-        "li",
-        {
-          key: slot.id,
-          staticClass: "courseRanking__rankItem",
-          staticStyle: {
-            display: "flex",
-            "flex-direction": "row",
-            padding: "10px"
-          }
-        },
-        [
-          slot.isNonSequential ? _c("hr") : _vm._e(),
-          _vm._v(" "),
-          _c(
-            "div",
-            {
-              staticClass: "position",
-              staticStyle: {
-                "font-size": "28px",
-                color: "rgb(132, 132, 132)",
-                "text-align": "right",
-                width: "80px",
-                "padding-right": "10px"
-              }
-            },
-            [_vm._v("\n            " + _vm._s(slot.rank) + "\n        ")]
-          ),
-          _vm._v(" "),
-          _c("div", { staticClass: "info" }, [
-            _c(
-              "div",
-              {
-                class: { isLoggedInUser: slot.isLoggedInUser },
-                staticStyle: { "font-size": "16px" }
-              },
-              [
-                _vm._v(
-                  "\n                " + _vm._s(slot.name) + "\n            "
-                )
-              ]
-            ),
-            _vm._v(" "),
-            _c(
-              "div",
-              {
-                staticClass: "score",
-                staticStyle: {
-                  "font-size": "10px",
-                  color: "rgb(132, 132, 132)"
-                }
-              },
-              [
-                _vm._v(
-                  "\n                " +
-                    _vm._s(slot.courseScore) +
-                    " PTS (+" +
-                    _vm._s(slot.pointsDifference) +
-                    ")\n            "
-                )
-              ]
-            )
+      return _c("div", { key: slot.index }, [
+        slot.nonSequentialStart ? _c("hr") : _vm._e(),
+        _vm._v(" "),
+        _c("li", { staticClass: "courseRanking__rankItem" }, [
+          _c("div", { staticClass: "position" }, [
+            _vm._v("\n                " + _vm._s(slot.rank) + "\n            ")
           ]),
           _vm._v(" "),
-          slot.isNonSequential ? _c("hr") : _vm._e()
-        ]
-      )
+          _c("div", { staticClass: "info" }, [
+            _c("div", { class: { isLoggedInUser: slot.isLoggedInUser } }, [
+              _vm._v(
+                "\n                    " +
+                  _vm._s(slot.name) +
+                  "\n                "
+              )
+            ]),
+            _vm._v(" "),
+            _c("div", { staticClass: "score" }, [
+              _vm._v(
+                "\n                    " +
+                  _vm._s(slot.courseScore) +
+                  " PTS\n                    "
+              ),
+              slot.pointsDifference
+                ? _c("span", [
+                    _vm._v("(+" + _vm._s(slot.pointsDifference) + ")")
+                  ])
+                : _vm._e()
+            ])
+          ])
+        ]),
+        _vm._v(" "),
+        slot.nonSequentialEnd ? _c("hr") : _vm._e()
+      ])
     }),
     0
   )

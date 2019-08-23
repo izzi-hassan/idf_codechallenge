@@ -61,21 +61,11 @@
             filterRanks(rankings) {
                 /* Filter the rankings by country and get interesting users */
                 let countryRanks =  getRanks(_.filter(_.cloneDeep(rankings), {'country_id': this.user.country_id}), this.user.id);
-                
+                this.countryRanks = countryRanks.ranks;
+
                 /* Get interesting users globally */
                 let worldRanks = getRanks(_.cloneDeep(rankings), this.user.id);
-
-                this.countryRanks = [
-                    ...countryRanks.topTier,
-                    ...countryRanks.middleTier,
-                    ...countryRanks.bottomTier
-                ];
-                
-                this.worldRanks = [
-                    ...worldRanks.topTier,
-                    ...worldRanks.middleTier,
-                    ...worldRanks.bottomTier
-                ];
+                this.worldRanks = worldRanks.ranks;
 
                 /* User's ranks */
                 this.userCountryRank = countryRanks.loggedInUser.rank;
@@ -89,15 +79,22 @@
     }
 
     function getRanks(rankings, loggedInUserId) {
-        rankings = _.forEach(rankings, function(item, key) {
+        const loggedInUser = _.find(rankings, {id: loggedInUserId});
+
+        rankings = _.forEach(rankings, (item, key) => {
             item.rank = key + 1;
-            item.pointsDifference = (key == 0) ? 0 : item.pointsDifference = rankings[key - 1].courseScore - item.courseScore;
+            item.pointsDifference = item.courseScore - loggedInUser.courseScore;
+
+            item.pointsDifference = (item.pointsDifference > 0) ? item.pointsDifference : false;
+
+            if (item.id == loggedInUserId) {
+                item.isLoggedInUser = true;
+            }
         });
         
         /* Get the groups we are interested in */
         const topThree = _.take(rankings, 3);
         const bottomThree = _.takeRight(rankings, 3);
-        const loggedInUser = _.find(rankings, {id: loggedInUserId});
 
         const loggedInUserThree = (loggedInUser.rank == 1 || loggedInUser.rank == 2) ? topThree : _.slice(rankings, loggedInUser.rank - 2, loggedInUser.rank + 1);
         
@@ -129,9 +126,10 @@
         }
 
         if (middleTier.length == 0) {
-            // Need Median
+            // How many middle tier users needed
             const middleTierLength = 9 - topTier.length - bottomTier.length;
 
+            // Get Median User
             const medianRank = Math.ceil(bottomTier[0].rank - topTier[topTier.length - 1].rank / 2);
             middleTier.push(rankings[--medianRank]);
 
@@ -157,16 +155,18 @@
             }
         }
 
-        console.log('Logged In Three', loggedInUserThree);
-        console.log('Top Tier', topTier);
-        console.log('Middle Tier', middleTier);
-        console.log('Bottom Tier', bottomTier);
+        middleTier[0].nonSequentialStart = true;
+        middleTier[middleTier.length - 1].nonSequentialEnd = true;
+
+        const ranks = [
+            ...topTier,
+            ...middleTier,
+            ...bottomTier
+        ];
 
         return {
             loggedInUser: loggedInUser,
-            topTier: topTier,
-            middleTier: middleTier,
-            bottomTier: bottomTier
+            ranks: ranks
         };
     }
 </script>
