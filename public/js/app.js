@@ -1756,7 +1756,12 @@ __webpack_require__.r(__webpack_exports__);
 //
 /* harmony default export */ __webpack_exports__["default"] = ({
   name: 'CategoryBoard',
-  props: ['slots']
+  props: {
+    slots: {
+      type: Array,
+      required: true
+    }
+  }
 });
 
 /***/ }),
@@ -1771,8 +1776,8 @@ __webpack_require__.r(__webpack_exports__);
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _CategoryBoard__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./CategoryBoard */ "./resources/js/components/CourseLeaderBoard/CategoryBoard.vue");
-function _readOnlyError(name) { throw new Error("\"" + name + "\" is read-only"); }
-
+/* harmony import */ var timers__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! timers */ "./node_modules/timers-browserify/main.js");
+/* harmony import */ var timers__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(timers__WEBPACK_IMPORTED_MODULE_1__);
 function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread(); }
 
 function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance"); }
@@ -1781,6 +1786,12 @@ function _iterableToArray(iter) { if (Symbol.iterator in Object(iter) || Object.
 
 function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } }
 
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(source, true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(source).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 //
 //
 //
@@ -1803,41 +1814,64 @@ function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 //
 //
 //
+
 
 /* harmony default export */ __webpack_exports__["default"] = ({
   name: 'CourseLeaderBoard',
   components: {
     categoryBoard: _CategoryBoard__WEBPACK_IMPORTED_MODULE_0__["default"]
   },
-  props: ['loggedInUser', 'courseId'],
+  props: {
+    user: {
+      type: Object,
+      required: true
+    },
+    courseId: {
+      type: Number,
+      required: true
+    }
+  },
   data: function data() {
     return {
-      user: {
-        country: {
-          name: ''
-        }
-      },
-      userCountryRank: 0,
-      userWorldRank: 0,
-      countryRanks: {},
-      worldRanks: {}
+      userCountryRank: '--',
+      userWorldRank: '--',
+      countryRanks: [],
+      worldRanks: [],
+      poller: null,
+      status: {
+        loading: true,
+        loaded: false,
+        error: false,
+        info: null
+      }
     };
   },
   methods: {
-    getUser: function getUser() {
+    refreshBoards: function refreshBoards() {
       var _this = this;
 
-      axios.get('/user').then(function (response) {
-        _this.user = response.data;
-      });
-    },
-    refreshBoards: function refreshBoards() {
-      var _this2 = this;
+      console.log('Refreshing Leaderboard'); // Fetch leaderboard data for this course
 
       axios.get('/api/course/' + this.courseId + '/leaderboard').then(function (response) {
-        _this2.filterRanks(response.data);
+        _this.status = _objectSpread({}, _this.status, {
+          error: false,
+          info: 'Leaderboard loaded: ' + response
+        });
+
+        _this.filterRanks(response.data);
+
+        _this.status.loaded = true;
+
+        _this.startPoll();
       })["catch"](function (error) {
-        console.log(error);
+        _this.status = _objectSpread({}, _this.status, {
+          error: true,
+          loaded: false,
+          info: 'Error fetching leaderboard data: ' + error
+        });
+        console.log(_this.status.info);
+      })["finally"](function () {
+        _this.status.loading = false;
       });
     },
     filterRanks: function filterRanks(rankings) {
@@ -1854,13 +1888,29 @@ function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 
       this.userCountryRank = countryRanks.loggedInUser.rank;
       this.userWorldRank = worldRanks.loggedInUser.rank;
+    },
+    startPoll: function startPoll() {
+      this.poller = setTimeout(this.refreshBoards, 10000);
     }
   },
   mounted: function mounted() {
-    this.getUser();
     this.refreshBoards();
+  },
+  beforeDestroy: function beforeDestroy() {
+    if (this.poller !== null) {
+      Object(timers__WEBPACK_IMPORTED_MODULE_1__["clearTimeout"])(this.poller);
+    }
   }
 });
+/**
+ * Figures out which ranks to display
+ * Returns the ranks for the board along with the loggedIn User's rank object
+ * 
+ * @param {Array} rankings
+ * @param {Number} loggedInUserId
+ * 
+ * @return {Object}
+ */
 
 function getRanks(rankings, loggedInUserId) {
   var loggedInUser = _.find(rankings, {
@@ -1906,19 +1956,19 @@ function getRanks(rankings, loggedInUserId) {
     // How many middle tier users needed
     var middleTierLength = 9 - topTier.length - bottomTier.length; // Get Median User
 
-    var medianRank = Math.ceil(bottomTier[0].rank - topTier[topTier.length - 1].rank / 2);
-    middleTier.push(rankings[(_readOnlyError("medianRank"), --medianRank)]); // Fill out middle tier
+    var medianRank = topTier[topTier.length - 1].rank + Math.ceil((bottomTier[0].rank - topTier[topTier.length - 1].rank) / 2);
+    middleTier.push(rankings[medianRank - 1]); // Fill out middle tier
 
     var i = 1;
 
     while (middleTierLength > 0) {
-      middleTier = [].concat(_toConsumableArray(middleTier), [rankings[medianRank + i]]);
+      middleTier = [].concat(_toConsumableArray(middleTier), [rankings[medianRank + i + 1]]);
 
       if (--medianTierLength == 0) {
         break;
       }
 
-      middleTier = [rankings[medianRank - i]].concat(_toConsumableArray(middleTier));
+      middleTier = [rankings[medianRank - i + 1]].concat(_toConsumableArray(middleTier));
       medianTierLength--;
       i++;
     }

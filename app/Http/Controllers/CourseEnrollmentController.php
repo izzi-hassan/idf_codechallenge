@@ -31,7 +31,7 @@ class CourseEnrollmentController extends Controller
 
         $leaderboard = $course->leaderboard;
 
-        return view('courseEnrollments.show', ['enrollment' => $enrollment, 'leaderboard' => $leaderboard]);
+        return view('courseEnrollments.show', ['enrollment' => $enrollment, 'leaderboard' => $leaderboard, 'user' => auth()->user()]);
     }
 
     public function store(string $slug)

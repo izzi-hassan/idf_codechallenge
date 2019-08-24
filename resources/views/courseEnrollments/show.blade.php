@@ -23,9 +23,13 @@
                         </ol>
                     </div>
                 </div>
-                
+
                 <div id="vue-course-leaderboard">
-                    <course-leaderboard :course-id="{{ $enrollment->course->id }}"></course-leaderboard>
+                    <course-leaderboard 
+                        :course-id="{{ $enrollment->course->id }}"
+                        :user='@json($user)'
+                    >
+                    </course-leaderboard>
                 </div>
             </div>
         </div>

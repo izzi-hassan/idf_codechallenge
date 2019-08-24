@@ -22,40 +22,66 @@
 
 <script>
     import CategoryBoard from './CategoryBoard';
+import { clearTimeout } from 'timers';
 
     export default {
         name: 'CourseLeaderBoard',
         components: {
             categoryBoard: CategoryBoard
         },
-        props: ['loggedInUser', 'courseId'],
+        props: {
+            user: {
+                type: Object,
+                required: true
+            },
+            courseId: {
+                type: Number,
+                required: true
+            }
+        },
         data() {
             return {
-                user: {
-                    country: {
-                        name: ''
-                    }
-                },
-                userCountryRank: 0,
-                userWorldRank: 0,
-                countryRanks: {},
-                worldRanks: {}
+                userCountryRank: '--',
+                userWorldRank: '--',
+                countryRanks: [],
+                worldRanks: [],
+                poller: null,
+                status: {
+                    loading: true,
+                    loaded: false,
+                    error: false,
+                    info: null
+                }
             };
         },
         methods: {
-            getUser() {
-                axios.get('/user')
-                .then(response => {
-                    this.user = response.data;
-                });
-            },
             refreshBoards() {
+                console.log('Refreshing Leaderboard');
+                
+                // Fetch leaderboard data for this course
                 axios.get('/api/course/' + this.courseId + '/leaderboard')
                 .then(response => {
+                    this.status = {
+                        ...this.status,
+                        error: false,
+                        info: 'Leaderboard loaded: ' + response
+                    }
+
                     this.filterRanks(response.data);
+                    this.status.loaded = true;
+                    this.startPoll();
                 })
                 .catch(error => {
-                    console.log(error);
+                    this.status = {
+                        ...this.status,
+                        error: true,
+                        loaded: false,
+                        info: 'Error fetching leaderboard data: ' + error
+                    };
+                    console.log(this.status.info);
+                })
+                .finally(() => {
+                    this.status.loading = false;
                 });
             },
             filterRanks(rankings) {
@@ -70,14 +96,30 @@
                 /* User's ranks */
                 this.userCountryRank = countryRanks.loggedInUser.rank;
                 this.userWorldRank = worldRanks.loggedInUser.rank;
+            },
+            startPoll() {
+                this.poller = setTimeout(this.refreshBoards, 10000)
             }
         },
         mounted() {
-            this.getUser();
             this.refreshBoards();
+        },
+        beforeDestroy() {
+            if (this.poller !== null) {
+                clearTimeout(this.poller);
+            }
         }
     }
 
+    /**
+     * Figures out which ranks to display
+     * Returns the ranks for the board along with the loggedIn User's rank object
+     * 
+     * @param {Array} rankings
+     * @param {Number} loggedInUserId
+     * 
+     * @return {Object}
+     */
     function getRanks(rankings, loggedInUserId) {
         const loggedInUser = _.find(rankings, {id: loggedInUserId});
 
@@ -130,15 +172,15 @@
             const middleTierLength = 9 - topTier.length - bottomTier.length;
 
             // Get Median User
-            const medianRank = Math.ceil(bottomTier[0].rank - topTier[topTier.length - 1].rank / 2);
-            middleTier.push(rankings[--medianRank]);
+            const medianRank = topTier[topTier.length - 1].rank + Math.ceil((bottomTier[0].rank - topTier[topTier.length - 1].rank) / 2);
+            middleTier.push(rankings[medianRank - 1]);
 
             // Fill out middle tier
             let i = 1;
             while (middleTierLength > 0) {
                 middleTier = [
                     ...middleTier,
-                    rankings[medianRank + i]
+                    rankings[medianRank + i + 1]
                 ];
 
                 if (--medianTierLength == 0) {
@@ -146,7 +188,7 @@
                 }
                 
                 middleTier = [
-                    rankings[medianRank - i],
+                    rankings[medianRank - i + 1],
                     ...middleTier
                 ]
 

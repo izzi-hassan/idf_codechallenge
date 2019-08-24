@@ -58,6 +58,11 @@
 <script>
     export default {
         name: 'CategoryBoard',
-        props: ['slots']
+        props: {
+            slots: {
+                type: Array,
+                required: true
+            }
+        }
     }
 </script>
