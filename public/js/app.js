@@ -1754,6 +1754,8 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
 /* harmony default export */ __webpack_exports__["default"] = ({
   name: 'CategoryBoard',
   props: {
@@ -1875,6 +1877,26 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
       });
     },
     filterRanks: function filterRanks(rankings) {
+      /*  Check for case where the logged in user has a score equal to someone else
+          and give the current user precedence.
+      */
+      var loggedInUserIndex = _.findIndex(rankings, {
+        id: this.user.id
+      });
+
+      var loggedInUser = _.find(rankings, {
+        id: this.user.id
+      });
+
+      var firstUserWithSameScoreIndex = _.findIndex(rankings, {
+        courseScore: loggedInUser.courseScore
+      });
+
+      console.log(loggedInUserIndex, firstUserWithSameScoreIndex);
+      var _ref = [rankings[firstUserWithSameScoreIndex], rankings[loggedInUserIndex]];
+      rankings[loggedInUserIndex] = _ref[0];
+      rankings[firstUserWithSameScoreIndex] = _ref[1];
+
       /* Filter the rankings by country and get interesting users */
       var countryRanks = getRanks(_.filter(_.cloneDeep(rankings), {
         'country_id': this.user.country_id
@@ -1917,13 +1939,13 @@ function getRanks(rankings, loggedInUserId) {
     id: loggedInUserId
   });
 
-  rankings = _.forEach(rankings, function (item, key) {
-    item.rank = key + 1;
-    item.pointsDifference = item.courseScore - loggedInUser.courseScore;
-    item.pointsDifference = item.pointsDifference > 0 ? item.pointsDifference : false;
+  rankings = _.forEach(rankings, function (user, key) {
+    user.rank = key + 1;
+    user.pointsDifference = user.courseScore - loggedInUser.courseScore;
+    user.pointsDifference = user.pointsDifference > 0 ? user.pointsDifference : false;
 
-    if (item.id == loggedInUserId) {
-      item.isLoggedInUser = true;
+    if (user.id == loggedInUserId) {
+      user.isLoggedInUser = true;
     }
   });
   /* Get the groups we are interested in */
@@ -6442,7 +6464,7 @@ exports = module.exports = __webpack_require__(/*! ../../../../node_modules/css-
 
 
 // module
-exports.push([module.i, "\nul[data-v-3a5ea640] {\n    padding: 0px;\n}\n.courseRanking__rankItem[data-v-3a5ea640] {\n    display: flex;\n    flex-direction: row;\n    padding: 10px;\n}\n.position[data-v-3a5ea640] {\n    font-size: 28px;\n    color: rgb(132, 132, 132);\n    text-align: right;\n    width: 80px;\n    padding-right: 10px;\n}\n.isLoggedInUser[data-v-3a5ea640] {\n    font-weight: bold;\n}\n.info[data-v-3a5ea640] {\n    font-size: 16px;\n}\n.score[data-v-3a5ea640] {\n    font-size: 10px;\n    color: rgb(132, 132, 132);\n}\n", ""]);
+exports.push([module.i, "\nul[data-v-3a5ea640] {\n    padding: 0px;\n}\n.courseRanking__rankItem[data-v-3a5ea640] {\n    display: flex;\n    flex-direction: row;\n    padding: 10px;\n}\n.position[data-v-3a5ea640] {\n    font-size: 28px;\n    color: rgb(132, 132, 132);\n    text-align: right;\n    width: 80px;\n    padding-right: 10px;\n}\n.isLoggedInUser[data-v-3a5ea640] {\n    font-weight: bold;\n    background-color: #EEE;\n}\n.info[data-v-3a5ea640] {\n    font-size: 16px;\n}\n.score[data-v-3a5ea640] {\n    font-size: 10px;\n    color: rgb(132, 132, 132);\n}\n", ""]);
 
 // exports
 
@@ -37930,34 +37952,43 @@ var render = function() {
       return _c("div", { key: slot.index }, [
         slot.nonSequentialStart ? _c("hr") : _vm._e(),
         _vm._v(" "),
-        _c("li", { staticClass: "courseRanking__rankItem" }, [
-          _c("div", { staticClass: "position" }, [
-            _vm._v("\n                " + _vm._s(slot.rank) + "\n            ")
-          ]),
-          _vm._v(" "),
-          _c("div", { staticClass: "info" }, [
-            _c("div", { class: { isLoggedInUser: slot.isLoggedInUser } }, [
+        _c(
+          "li",
+          {
+            staticClass: "courseRanking__rankItem",
+            class: { isLoggedInUser: slot.isLoggedInUser }
+          },
+          [
+            _c("div", { staticClass: "position" }, [
               _vm._v(
-                "\n                    " +
-                  _vm._s(slot.name) +
-                  "\n                "
+                "\n                " + _vm._s(slot.rank) + "\n            "
               )
             ]),
             _vm._v(" "),
-            _c("div", { staticClass: "score" }, [
-              _vm._v(
-                "\n                    " +
-                  _vm._s(slot.courseScore) +
-                  " PTS\n                    "
-              ),
-              slot.pointsDifference
-                ? _c("span", [
-                    _vm._v("(+" + _vm._s(slot.pointsDifference) + ")")
-                  ])
-                : _vm._e()
+            _c("div", { staticClass: "info" }, [
+              _c("div", [
+                _vm._v(
+                  "\n                    " +
+                    _vm._s(slot.name) +
+                    "\n                "
+                )
+              ]),
+              _vm._v(" "),
+              _c("div", { staticClass: "score" }, [
+                _vm._v(
+                  "\n                    " +
+                    _vm._s(slot.courseScore) +
+                    " PTS\n                    "
+                ),
+                slot.pointsDifference
+                  ? _c("span", [
+                      _vm._v("(+" + _vm._s(slot.pointsDifference) + ")")
+                    ])
+                  : _vm._e()
+              ])
             ])
-          ])
-        ]),
+          ]
+        ),
         _vm._v(" "),
         slot.nonSequentialEnd ? _c("hr") : _vm._e()
       ])

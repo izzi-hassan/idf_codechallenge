@@ -57,7 +57,7 @@ import { clearTimeout } from 'timers';
         methods: {
             refreshBoards() {
                 console.log('Refreshing Leaderboard');
-                
+
                 // Fetch leaderboard data for this course
                 axios.get('/api/course/' + this.courseId + '/leaderboard')
                 .then(response => {
@@ -85,12 +85,21 @@ import { clearTimeout } from 'timers';
                 });
             },
             filterRanks(rankings) {
+                /*  Check for case where the logged in user has a score equal to someone else
+                    and give the current user precedence.
+                */
+                let loggedInUserIndex = _.findIndex(rankings, {id: this.user.id});
+                const loggedInUser = _.find(rankings, {id: this.user.id});
+                let firstUserWithSameScoreIndex = _.findIndex(rankings, {courseScore: loggedInUser.courseScore});
+                console.log(loggedInUserIndex, firstUserWithSameScoreIndex);
+                [rankings[loggedInUserIndex], rankings[firstUserWithSameScoreIndex]] = [rankings[firstUserWithSameScoreIndex], rankings[loggedInUserIndex]];
+
                 /* Filter the rankings by country and get interesting users */
-                let countryRanks =  getRanks(_.filter(_.cloneDeep(rankings), {'country_id': this.user.country_id}), this.user.id);
+                const countryRanks =  getRanks(_.filter(_.cloneDeep(rankings), {'country_id': this.user.country_id}), this.user.id);
                 this.countryRanks = countryRanks.ranks;
 
                 /* Get interesting users globally */
-                let worldRanks = getRanks(_.cloneDeep(rankings), this.user.id);
+                const worldRanks = getRanks(_.cloneDeep(rankings), this.user.id);
                 this.worldRanks = worldRanks.ranks;
 
                 /* User's ranks */
@@ -123,14 +132,13 @@ import { clearTimeout } from 'timers';
     function getRanks(rankings, loggedInUserId) {
         const loggedInUser = _.find(rankings, {id: loggedInUserId});
 
-        rankings = _.forEach(rankings, (item, key) => {
-            item.rank = key + 1;
-            item.pointsDifference = item.courseScore - loggedInUser.courseScore;
+        rankings = _.forEach(rankings, (user, key) => {
+            user.rank = key + 1;
+            user.pointsDifference = user.courseScore - loggedInUser.courseScore;
 
-            item.pointsDifference = (item.pointsDifference > 0) ? item.pointsDifference : false;
+            user.pointsDifference = (user.pointsDifference > 0) ? user.pointsDifference : false;
 
-            if (item.id == loggedInUserId) {
-                item.isLoggedInUser = true;
+                user.isLoggedInUser = true;
             }
         });
         

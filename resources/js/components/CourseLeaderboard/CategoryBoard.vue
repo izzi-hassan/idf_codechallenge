@@ -4,12 +4,12 @@
             :key="slot.index"
         >
             <hr v-if="slot.nonSequentialStart" />
-            <li class="courseRanking__rankItem">
+            <li class="courseRanking__rankItem" :class="{'isLoggedInUser': slot.isLoggedInUser}">
                 <div class="position">
                     {{ slot.rank }}
                 </div>
                 <div class="info">
-                    <div :class="{'isLoggedInUser': slot.isLoggedInUser}">
+                    <div>
                         {{ slot.name }}
                     </div>
                     <div class="score">
@@ -41,8 +41,10 @@
         width: 80px;
         padding-right: 10px;
     }
+
     .isLoggedInUser {
         font-weight: bold;
+        background-color: #EEE;
     }
 
     .info {
