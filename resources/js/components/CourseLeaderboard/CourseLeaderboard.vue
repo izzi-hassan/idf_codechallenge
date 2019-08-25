@@ -22,7 +22,7 @@
 
 <script>
     import CategoryBoard from './CategoryBoard';
-import { clearTimeout } from 'timers';
+    import { clearTimeout } from 'timers';
 
     export default {
         name: 'CourseLeaderBoard',
@@ -91,7 +91,6 @@ import { clearTimeout } from 'timers';
                 let loggedInUserIndex = _.findIndex(rankings, {id: this.user.id});
                 const loggedInUser = _.find(rankings, {id: this.user.id});
                 let firstUserWithSameScoreIndex = _.findIndex(rankings, {courseScore: loggedInUser.courseScore});
-                console.log(loggedInUserIndex, firstUserWithSameScoreIndex);
                 [rankings[loggedInUserIndex], rankings[firstUserWithSameScoreIndex]] = [rankings[firstUserWithSameScoreIndex], rankings[loggedInUserIndex]];
 
                 /* Filter the rankings by country and get interesting users */
@@ -138,6 +137,7 @@ import { clearTimeout } from 'timers';
 
             user.pointsDifference = (user.pointsDifference > 0) ? user.pointsDifference : false;
 
+            if (user.id == loggedInUserId) {
                 user.isLoggedInUser = true;
             }
         });

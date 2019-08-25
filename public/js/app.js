@@ -1892,7 +1892,6 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
         courseScore: loggedInUser.courseScore
       });
 
-      console.log(loggedInUserIndex, firstUserWithSameScoreIndex);
       var _ref = [rankings[firstUserWithSameScoreIndex], rankings[loggedInUserIndex]];
       rankings[loggedInUserIndex] = _ref[0];
       rankings[firstUserWithSameScoreIndex] = _ref[1];
