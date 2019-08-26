@@ -147,7 +147,6 @@
         const bottomThree = _.takeRight(rankings, 3);
 
         const loggedInUserThree = (loggedInUser.rank == 1 || loggedInUser.rank == 2) ? topThree : _.slice(rankings, loggedInUser.rank - 2, loggedInUser.rank + 1);
-        
         let topTier = [];
         let middleTier = [];
         let bottomTier = [];
@@ -155,17 +154,11 @@
         /* Manipulate results to show the rankings we are interested in */
         if (loggedInUser.rank <= 4) {
             // Top Tier
-            topTier = [
-                ...topThree,
-                ...loggedInUserThree
-            ];
-
+            topTier = _.union(topThree, loggedInUserThree);
+            
             bottomTier = bottomThree;
         } else if (bottomThree[0].rank - loggedInUser.rank < 2 ) {
-            bottomTier = [
-                ...loggedInUserThree,
-                ...loggedInUserThree
-            ];
+            bottomTier = _union(loggedInUserThree, bottomThree);
 
             topTier = topThree;
         } else {
@@ -177,7 +170,7 @@
 
         if (middleTier.length == 0) {
             // How many middle tier users needed
-            const middleTierLength = 9 - topTier.length - bottomTier.length;
+            let middleTierLength = 9 - topTier.length - bottomTier.length;
 
             // Get Median User
             const medianRank = topTier[topTier.length - 1].rank + Math.ceil((bottomTier[0].rank - topTier[topTier.length - 1].rank) / 2);
@@ -186,21 +179,15 @@
             // Fill out middle tier
             let i = 1;
             while (middleTierLength > 0) {
-                middleTier = [
-                    ...middleTier,
-                    rankings[medianRank + i + 1]
-                ];
+                middleTier.push(rankings[medianRank - 1 + i]);
 
-                if (--medianTierLength == 0) {
+                if (--middleTierLength == 0) {
                     break;
                 }
                 
-                middleTier = [
-                    rankings[medianRank - i + 1],
-                    ...middleTier
-                ]
+                middleTier.unshift(rankings[medianRank - 1 - i]);
 
-                medianTierLength--;
+                middleTierLength--;
                 i++;
             }
         }

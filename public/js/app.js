@@ -1961,10 +1961,10 @@ function getRanks(rankings, loggedInUserId) {
 
   if (loggedInUser.rank <= 4) {
     // Top Tier
-    topTier = [].concat(_toConsumableArray(topThree), _toConsumableArray(loggedInUserThree));
+    topTier = _.union(topThree, loggedInUserThree);
     bottomTier = bottomThree;
   } else if (bottomThree[0].rank - loggedInUser.rank < 2) {
-    bottomTier = [].concat(_toConsumableArray(loggedInUserThree), _toConsumableArray(loggedInUserThree));
+    bottomTier = _union(loggedInUserThree, bottomThree);
     topTier = topThree;
   } else {
     // Middle Tier
@@ -1983,14 +1983,14 @@ function getRanks(rankings, loggedInUserId) {
     var i = 1;
 
     while (middleTierLength > 0) {
-      middleTier = [].concat(_toConsumableArray(middleTier), [rankings[medianRank + i + 1]]);
+      middleTier.push(rankings[medianRank - 1 + i]);
 
-      if (--medianTierLength == 0) {
+      if (--middleTierLength == 0) {
         break;
       }
 
-      middleTier = [rankings[medianRank - i + 1]].concat(_toConsumableArray(middleTier));
-      medianTierLength--;
+      middleTier.unshift(rankings[medianRank - 1 - i]);
+      middleTierLength--;
       i++;
     }
   }
