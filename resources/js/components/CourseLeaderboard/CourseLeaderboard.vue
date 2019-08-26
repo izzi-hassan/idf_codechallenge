@@ -22,7 +22,6 @@
 
 <script>
     import CategoryBoard from './CategoryBoard';
-    import { clearTimeout } from 'timers';
 
     export default {
         name: 'CourseLeaderBoard',
@@ -45,7 +44,10 @@
                 userWorldRank: '--',
                 countryRanks: [],
                 worldRanks: [],
-                poller: null,
+                poller: {
+                    id: null,
+                    interval: 10000
+                },
                 status: {
                     loading: true,
                     loaded: false,
@@ -56,8 +58,6 @@
         },
         methods: {
             refreshBoards() {
-                console.log('Refreshing Leaderboard');
-
                 // Fetch leaderboard data for this course
                 axios.get('/api/course/' + this.courseId + '/leaderboard')
                 .then(response => {
@@ -76,8 +76,9 @@
                         ...this.status,
                         error: true,
                         loaded: false,
-                        info: 'Error fetching leaderboard data: ' + error
+                        info: 'Error loading leaderboard data: ' + error
                     };
+
                     console.log(this.status.info);
                 })
                 .finally(() => {
@@ -106,7 +107,7 @@
                 this.userWorldRank = worldRanks.loggedInUser.rank;
             },
             startPoll() {
-                this.poller = setTimeout(this.refreshBoards, 10000)
+                this.poller.id = setTimeout(this.refreshBoards, this.poller.interval)
             }
         },
         mounted() {
@@ -114,7 +115,7 @@
         },
         beforeDestroy() {
             if (this.poller !== null) {
-                clearTimeout(this.poller);
+                clearTimeout(this.poller.id);
             }
         }
     }
@@ -145,47 +146,45 @@
         /* Get the groups we are interested in */
         const topThree = _.take(rankings, 3);
         const bottomThree = _.takeRight(rankings, 3);
-
         const loggedInUserThree = (loggedInUser.rank == 1 || loggedInUser.rank == 2) ? topThree : _.slice(rankings, loggedInUser.rank - 2, loggedInUser.rank + 1);
-        let topTier = [];
-        let middleTier = [];
-        let bottomTier = [];
-
+        
+        let topTier = [], middleTier = [], bottomTier = [];
         /* Manipulate results to show the rankings we are interested in */
         if (loggedInUser.rank <= 4) {
-            // Top Tier
+            // User in Top Tier
             topTier = _.union(topThree, loggedInUserThree);
             
             bottomTier = bottomThree;
         } else if (bottomThree[0].rank - loggedInUser.rank < 2 ) {
+            // User in Bottom Tier
             bottomTier = _union(loggedInUserThree, bottomThree);
 
             topTier = topThree;
         } else {
-            // Middle Tier
+            // User in Middle Tier
             topTier = topThree;
             bottomTier = bottomThree;
             middleTier = loggedInUserThree;
         }
 
         if (middleTier.length == 0) {
-            // How many middle tier users needed
+            // How many Middle Tier users needed
             let middleTierLength = 9 - (topTier.length + bottomTier.length);
 
             // Get Median User
-            const medianRank = topTier[topTier.length - 1].rank + Math.ceil((bottomTier[0].rank - topTier[topTier.length - 1].rank) / 2);
-            middleTier.push(rankings[medianRank - 1]);
+            const medianRankIndex = topTier[topTier.length - 1].rank + Math.ceil((bottomTier[0].rank - topTier[topTier.length - 1].rank) / 2) - 1;
+            middleTier.push(rankings[medianRankIndex]);
 
-            // Fill out middle tier
+            // Fill out Middle Tier
             let i = 1;
             while (middleTierLength > 1) {
-                middleTier.push(rankings[medianRank - 1 + i]);
+                middleTier.push(rankings[medianRankIndex + i]);
 
                 if (--middleTierLength == 1) {
                     break;
                 }
                 
-                middleTier.unshift(rankings[medianRank - 1 - i]);
+                middleTier.unshift(rankings[medianRankIndex - i]);
 
                 middleTierLength--;
                 i++;
@@ -195,15 +194,13 @@
         middleTier[0].nonSequentialStart = true;
         middleTier[middleTier.length - 1].nonSequentialEnd = true;
 
-        const ranks = [
-            ...topTier,
-            ...middleTier,
-            ...bottomTier
-        ];
-
         return {
             loggedInUser: loggedInUser,
-            ranks: ranks
+            ranks: [
+                ...topTier,
+                ...middleTier,
+                ...bottomTier
+            ]
         };
     }
 </script>
