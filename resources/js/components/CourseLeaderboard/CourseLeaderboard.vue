@@ -170,7 +170,7 @@
 
         if (middleTier.length == 0) {
             // How many middle tier users needed
-            let middleTierLength = 9 - topTier.length - bottomTier.length;
+            let middleTierLength = 9 - (topTier.length + bottomTier.length);
 
             // Get Median User
             const medianRank = topTier[topTier.length - 1].rank + Math.ceil((bottomTier[0].rank - topTier[topTier.length - 1].rank) / 2);
@@ -178,10 +178,10 @@
 
             // Fill out middle tier
             let i = 1;
-            while (middleTierLength > 0) {
+            while (middleTierLength > 1) {
                 middleTier.push(rankings[medianRank - 1 + i]);
 
-                if (--middleTierLength == 0) {
+                if (--middleTierLength == 1) {
                     break;
                 }
                 
