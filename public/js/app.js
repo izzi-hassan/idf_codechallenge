@@ -1756,6 +1756,9 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
 /* harmony default export */ __webpack_exports__["default"] = ({
   name: 'CategoryBoard',
   props: {
@@ -1778,8 +1781,6 @@ __webpack_require__.r(__webpack_exports__);
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _CategoryBoard__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./CategoryBoard */ "./resources/js/components/CourseLeaderBoard/CategoryBoard.vue");
-/* harmony import */ var timers__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! timers */ "./node_modules/timers-browserify/main.js");
-/* harmony import */ var timers__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(timers__WEBPACK_IMPORTED_MODULE_1__);
 function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread(); }
 
 function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance"); }
@@ -1816,7 +1817,9 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 //
 //
 //
-
+//
+//
+//
 
 /* harmony default export */ __webpack_exports__["default"] = ({
   name: 'CourseLeaderBoard',
@@ -1839,12 +1842,16 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
       userWorldRank: '--',
       countryRanks: [],
       worldRanks: [],
-      poller: null,
+      poller: {
+        id: null,
+        interval: 10000
+      },
       status: {
         loading: true,
         loaded: false,
         error: false,
-        info: null
+        info: null,
+        hasRanks: false
       }
     };
   },
@@ -1852,8 +1859,7 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
     refreshBoards: function refreshBoards() {
       var _this = this;
 
-      console.log('Refreshing Leaderboard'); // Fetch leaderboard data for this course
-
+      // Fetch leaderboard data for this course
       axios.get('/api/course/' + this.courseId + '/leaderboard').then(function (response) {
         _this.status = _objectSpread({}, _this.status, {
           error: false,
@@ -1869,7 +1875,7 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
         _this.status = _objectSpread({}, _this.status, {
           error: true,
           loaded: false,
-          info: 'Error fetching leaderboard data: ' + error
+          info: 'Error loading leaderboard data: ' + error
         });
         console.log(_this.status.info);
       })["finally"](function () {
@@ -1877,41 +1883,49 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
       });
     },
     filterRanks: function filterRanks(rankings) {
+      /*  Handle the case where no user has completed the course */
+      this.status.hasRanks = rankings.length > 0;
       /*  Check for case where the logged in user has a score equal to someone else
           and give the current user precedence.
       */
-      var loggedInUserIndex = _.findIndex(rankings, {
+
+      var loggedInUserInRanks = _.find(rankings, {
         id: this.user.id
       });
 
-      var loggedInUser = _.find(rankings, {
-        id: this.user.id
-      });
+      if (loggedInUserInRanks !== undefined) {
+        var loggedInUserRankIndex = _.findIndex(rankings, {
+          id: this.user.id
+        });
 
-      var firstUserWithSameScoreIndex = _.findIndex(rankings, {
-        courseScore: loggedInUser.courseScore
-      });
+        var firstUserWithSameScoreIndex = _.findIndex(rankings, {
+          courseScore: loggedInUserInRanks.courseScore
+        });
 
-      var _ref = [rankings[firstUserWithSameScoreIndex], rankings[loggedInUserIndex]];
-      rankings[loggedInUserIndex] = _ref[0];
-      rankings[firstUserWithSameScoreIndex] = _ref[1];
-
+        var _ref = [rankings[firstUserWithSameScoreIndex], rankings[loggedInUserRankIndex]];
+        rankings[loggedInUserRankIndex] = _ref[0];
+        rankings[firstUserWithSameScoreIndex] = _ref[1];
+      }
       /* Filter the rankings by country and get interesting users */
+
+
       var countryRanks = getRanks(_.filter(_.cloneDeep(rankings), {
         'country_id': this.user.country_id
-      }), this.user.id);
+      }), loggedInUserInRanks);
       this.countryRanks = countryRanks.ranks;
       /* Get interesting users globally */
 
-      var worldRanks = getRanks(_.cloneDeep(rankings), this.user.id);
+      var worldRanks = getRanks(_.cloneDeep(rankings), loggedInUserInRanks);
       this.worldRanks = worldRanks.ranks;
       /* User's ranks */
 
-      this.userCountryRank = countryRanks.loggedInUser.rank;
-      this.userWorldRank = worldRanks.loggedInUser.rank;
+      if (loggedInUserInRanks !== undefined) {
+        this.userCountryRank = countryRanks.loggedInUserRank;
+        this.userWorldRank = worldRanks.loggedInUserRank;
+      }
     },
     startPoll: function startPoll() {
-      this.poller = setTimeout(this.refreshBoards, 10000);
+      this.poller.id = setTimeout(this.refreshBoards, this.poller.interval);
     }
   },
   mounted: function mounted() {
@@ -1919,7 +1933,7 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
   },
   beforeDestroy: function beforeDestroy() {
     if (this.poller !== null) {
-      Object(timers__WEBPACK_IMPORTED_MODULE_1__["clearTimeout"])(this.poller);
+      clearTimeout(this.poller.id);
     }
   }
 });
@@ -1928,68 +1942,84 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
  * Returns the ranks for the board along with the loggedIn User's rank object
  * 
  * @param {Array} rankings
- * @param {Number} loggedInUserId
+ * @param {Object} loggedInUser
  * 
  * @return {Object}
  */
 
-function getRanks(rankings, loggedInUserId) {
-  var loggedInUser = _.find(rankings, {
-    id: loggedInUserId
-  });
-
+function getRanks(rankings, loggedInUser) {
   rankings = _.forEach(rankings, function (user, key) {
     user.rank = key + 1;
-    user.pointsDifference = user.courseScore - loggedInUser.courseScore;
-    user.pointsDifference = user.pointsDifference > 0 ? user.pointsDifference : false;
+    user.pointsDifference = loggedInUser !== undefined ? user.courseScore - loggedInUser.courseScore : false;
 
-    if (user.id == loggedInUserId) {
+    if (user.pointsDifference && user.pointsDifference <= 0) {
+      user.pointsDifference = false;
+    }
+
+    if (loggedInUser !== undefined && user.id == loggedInUser.id) {
       user.isLoggedInUser = true;
+      loggedInUser.rank = user.rank;
     }
   });
+  /* Handle the case where there are fewer than 10 Users who have completed the course  */
+
+  if (rankings.length <= 9) {
+    return {
+      loggedInUserRank: loggedInUser !== undefined ? loggedInUser.rank : false,
+      ranks: rankings
+    };
+  }
   /* Get the groups we are interested in */
+
 
   var topThree = _.take(rankings, 3);
 
   var bottomThree = _.takeRight(rankings, 3);
 
-  var loggedInUserThree = loggedInUser.rank == 1 || loggedInUser.rank == 2 ? topThree : _.slice(rankings, loggedInUser.rank - 2, loggedInUser.rank + 1);
-  var topTier = [];
-  var middleTier = [];
-  var bottomTier = [];
+  var topTier = [],
+      middleTier = [],
+      bottomTier = [];
   /* Manipulate results to show the rankings we are interested in */
 
-  if (loggedInUser.rank <= 4) {
-    // Top Tier
-    topTier = _.union(topThree, loggedInUserThree);
-    bottomTier = bottomThree;
-  } else if (bottomThree[0].rank - loggedInUser.rank < 2) {
-    bottomTier = _union(loggedInUserThree, bottomThree);
+  if (loggedInUser === undefined) {
     topTier = topThree;
+    bottomTier = bottomThree;
   } else {
-    // Middle Tier
-    topTier = topThree;
-    bottomTier = bottomThree;
-    middleTier = loggedInUserThree;
+    var loggedInUserThree = loggedInUser.rank == 1 || loggedInUser.rank == 2 ? topThree : _.slice(rankings, loggedInUser.rank - 2, loggedInUser.rank + 1);
+
+    if (loggedInUser.rank <= 4) {
+      // User in Top Tier
+      topTier = _.union(topThree, loggedInUserThree);
+      bottomTier = bottomThree;
+    } else if (bottomThree[0].rank - loggedInUser.rank < 2) {
+      // User in Bottom Tier
+      bottomTier = _.union(loggedInUserThree, bottomThree);
+      topTier = topThree;
+    } else {
+      // User in Middle Tier
+      topTier = topThree;
+      bottomTier = bottomThree;
+      middleTier = loggedInUserThree;
+    }
   }
 
   if (middleTier.length == 0) {
-    // How many middle tier users needed
-    var middleTierLength = 9 - topTier.length - bottomTier.length; // Get Median User
+    // How many Middle Tier users needed
+    var middleTierLength = 9 - (topTier.length + bottomTier.length); // Get Median User
 
-    var medianRank = topTier[topTier.length - 1].rank + Math.ceil((bottomTier[0].rank - topTier[topTier.length - 1].rank) / 2);
-    middleTier.push(rankings[medianRank - 1]); // Fill out middle tier
+    var medianRankIndex = topTier[topTier.length - 1].rank + Math.ceil((bottomTier[0].rank - topTier[topTier.length - 1].rank) / 2) - 1;
+    middleTier.push(rankings[medianRankIndex]); // Fill out Middle Tier
 
     var i = 1;
 
-    while (middleTierLength > 0) {
-      middleTier.push(rankings[medianRank - 1 + i]);
+    while (middleTierLength > 1) {
+      middleTier.push(rankings[medianRankIndex + i]);
 
-      if (--middleTierLength == 0) {
+      if (--middleTierLength == 1) {
         break;
       }
 
-      middleTier.unshift(rankings[medianRank - 1 - i]);
+      middleTier.unshift(rankings[medianRankIndex - i]);
       middleTierLength--;
       i++;
     }
@@ -1997,10 +2027,9 @@ function getRanks(rankings, loggedInUserId) {
 
   middleTier[0].nonSequentialStart = true;
   middleTier[middleTier.length - 1].nonSequentialEnd = true;
-  var ranks = [].concat(_toConsumableArray(topTier), _toConsumableArray(middleTier), _toConsumableArray(bottomTier));
   return {
-    loggedInUser: loggedInUser,
-    ranks: ranks
+    loggedInUserRank: loggedInUser !== undefined ? loggedInUser.rank : false,
+    ranks: [].concat(_toConsumableArray(topTier), _toConsumableArray(middleTier), _toConsumableArray(bottomTier))
   };
 }
 
@@ -37945,55 +37974,61 @@ var render = function() {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  return _c(
-    "ul",
-    _vm._l(_vm.slots, function(slot) {
-      return _c("div", { key: slot.index }, [
-        slot.nonSequentialStart ? _c("hr") : _vm._e(),
-        _vm._v(" "),
-        _c(
-          "li",
-          {
-            staticClass: "courseRanking__rankItem",
-            class: { isLoggedInUser: slot.isLoggedInUser }
-          },
-          [
-            _c("div", { staticClass: "position" }, [
-              _vm._v(
-                "\n                " + _vm._s(slot.rank) + "\n            "
-              )
-            ]),
-            _vm._v(" "),
-            _c("div", { staticClass: "info" }, [
-              _c("div", [
-                _vm._v(
-                  "\n                    " +
-                    _vm._s(slot.name) +
-                    "\n                "
-                )
-              ]),
+  return _c("div", [
+    _vm.slots.length == 0
+      ? _c("span", [_vm._v("No ranks available")])
+      : _c(
+          "ul",
+          _vm._l(_vm.slots, function(slot) {
+            return _c("div", { key: slot.index }, [
+              slot.nonSequentialStart ? _c("hr") : _vm._e(),
               _vm._v(" "),
-              _c("div", { staticClass: "score" }, [
-                _vm._v(
-                  "\n                    " +
-                    _vm._s(slot.courseScore) +
-                    " PTS\n                    "
-                ),
-                slot.pointsDifference
-                  ? _c("span", [
-                      _vm._v("(+" + _vm._s(slot.pointsDifference) + ")")
+              _c(
+                "li",
+                {
+                  staticClass: "courseRanking__rankItem",
+                  class: { isLoggedInUser: slot.isLoggedInUser }
+                },
+                [
+                  _c("div", { staticClass: "position" }, [
+                    _vm._v(
+                      "\n                    " +
+                        _vm._s(slot.rank) +
+                        "\n                "
+                    )
+                  ]),
+                  _vm._v(" "),
+                  _c("div", { staticClass: "info" }, [
+                    _c("div", [
+                      _vm._v(
+                        "\n                        " +
+                          _vm._s(slot.name) +
+                          "\n                    "
+                      )
+                    ]),
+                    _vm._v(" "),
+                    _c("div", { staticClass: "score" }, [
+                      _vm._v(
+                        "\n                        " +
+                          _vm._s(slot.courseScore) +
+                          " PTS\n                        "
+                      ),
+                      slot.pointsDifference
+                        ? _c("span", [
+                            _vm._v("(+" + _vm._s(slot.pointsDifference) + ")")
+                          ])
+                        : _vm._e()
                     ])
-                  : _vm._e()
-              ])
+                  ])
+                ]
+              ),
+              _vm._v(" "),
+              slot.nonSequentialEnd ? _c("hr") : _vm._e()
             ])
-          ]
-        ),
-        _vm._v(" "),
-        slot.nonSequentialEnd ? _c("hr") : _vm._e()
-      ])
-    }),
-    0
-  )
+          }),
+          0
+        )
+  ])
 }
 var staticRenderFns = []
 render._withStripped = true
@@ -38028,35 +38063,47 @@ var render = function() {
       ]),
       _vm._v(" "),
       _c("div", { staticClass: "row" }, [
-        _c(
-          "div",
-          { staticClass: "col-md-6" },
-          [
-            _c("h4", [
-              _vm._v("You are ranked "),
-              _c("b", [_vm._v(_vm._s(_vm.userCountryRank))]),
-              _vm._v(" in " + _vm._s(_vm.user.country.name))
-            ]),
-            _vm._v(" "),
-            _c("category-board", { attrs: { slots: _vm.countryRanks } })
-          ],
-          1
-        ),
+        _c("div", { staticClass: "col-md-12" }, [
+          !_vm.status.hasRanks
+            ? _c("span", [
+                _vm._v("This course has not been completed by any Users")
+              ])
+            : _vm._e()
+        ]),
         _vm._v(" "),
-        _c(
-          "div",
-          { staticClass: "col-md-6" },
-          [
-            _c("h4", [
-              _vm._v("You are ranked "),
-              _c("b", [_vm._v(_vm._s(_vm.userWorldRank))]),
-              _vm._v(" Worldwide")
-            ]),
-            _vm._v(" "),
-            _c("category-board", { attrs: { slots: _vm.worldRanks } })
-          ],
-          1
-        )
+        _vm.status.hasRanks
+          ? _c(
+              "div",
+              { staticClass: "col-md-6" },
+              [
+                _c("h4", [
+                  _vm._v("You are ranked "),
+                  _c("b", [_vm._v(_vm._s(_vm.userCountryRank))]),
+                  _vm._v(" in " + _vm._s(_vm.user.country.name))
+                ]),
+                _vm._v(" "),
+                _c("category-board", { attrs: { slots: _vm.countryRanks } })
+              ],
+              1
+            )
+          : _vm._e(),
+        _vm._v(" "),
+        _vm.status.hasRanks
+          ? _c(
+              "div",
+              { staticClass: "col-md-6" },
+              [
+                _c("h4", [
+                  _vm._v("You are ranked "),
+                  _c("b", [_vm._v(_vm._s(_vm.userWorldRank))]),
+                  _vm._v(" Worldwide")
+                ]),
+                _vm._v(" "),
+                _c("category-board", { attrs: { slots: _vm.worldRanks } })
+              ],
+              1
+            )
+          : _vm._e()
       ])
     ])
   ])
@@ -50457,8 +50504,8 @@ __webpack_require__.r(__webpack_exports__);
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-__webpack_require__(/*! C:\xampp\htdocs\idf\resources\js\app.js */"./resources/js/app.js");
-module.exports = __webpack_require__(/*! C:\xampp\htdocs\idf\resources\sass\app.scss */"./resources/sass/app.scss");
+__webpack_require__(/*! C:\Bad Wolf\Repos\idf_codechallenge\resources\js\app.js */"./resources/js/app.js");
+module.exports = __webpack_require__(/*! C:\Bad Wolf\Repos\idf_codechallenge\resources\sass\app.scss */"./resources/sass/app.scss");
 
 
 /***/ })

@@ -7,11 +7,14 @@
                 Keep learning and earning course points to become one of our top learners!
             </p>
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-12">
+                    <span v-if="! status.hasRanks">This course has not been completed by any Users</span>
+                </div>
+                <div class="col-md-6" v-if="status.hasRanks">
                     <h4>You are ranked <b>{{ userCountryRank }}</b> in {{ user.country.name }}</h4>
                     <category-board :slots="countryRanks"></category-board>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-6" v-if="status.hasRanks">
                     <h4>You are ranked <b>{{ userWorldRank }}</b> Worldwide</h4>
                     <category-board :slots="worldRanks"></category-board>
                 </div>
@@ -52,7 +55,8 @@
                     loading: true,
                     loaded: false,
                     error: false,
-                    info: null
+                    info: null,
+                    hasRanks: false
                 }
             };
         },
@@ -76,7 +80,7 @@
                         ...this.status,
                         error: true,
                         loaded: false,
-                        info: 'Error loading leaderboard data: ' + error
+                        info: 'Error loading leaderboard data: ' + error,
                     };
 
                     console.log(this.status.info);
@@ -86,25 +90,33 @@
                 });
             },
             filterRanks(rankings) {
+                /*  Handle the case where no user has completed the course */
+                this.status.hasRanks = (rankings.length > 0);
+
                 /*  Check for case where the logged in user has a score equal to someone else
                     and give the current user precedence.
                 */
-                let loggedInUserIndex = _.findIndex(rankings, {id: this.user.id});
-                const loggedInUser = _.find(rankings, {id: this.user.id});
-                let firstUserWithSameScoreIndex = _.findIndex(rankings, {courseScore: loggedInUser.courseScore});
-                [rankings[loggedInUserIndex], rankings[firstUserWithSameScoreIndex]] = [rankings[firstUserWithSameScoreIndex], rankings[loggedInUserIndex]];
+                const loggedInUserInRanks = _.find(rankings, {id: this.user.id});
+
+                if (loggedInUserInRanks !== undefined) {
+                    let loggedInUserRankIndex = _.findIndex(rankings, {id: this.user.id});
+                    let firstUserWithSameScoreIndex = _.findIndex(rankings, {courseScore: loggedInUserInRanks.courseScore});
+                    [rankings[loggedInUserRankIndex], rankings[firstUserWithSameScoreIndex]] = [rankings[firstUserWithSameScoreIndex], rankings[loggedInUserRankIndex]];
+                }
 
                 /* Filter the rankings by country and get interesting users */
-                const countryRanks =  getRanks(_.filter(_.cloneDeep(rankings), {'country_id': this.user.country_id}), this.user.id);
+                const countryRanks =  getRanks(_.filter(_.cloneDeep(rankings), {'country_id': this.user.country_id}), loggedInUserInRanks);
                 this.countryRanks = countryRanks.ranks;
 
                 /* Get interesting users globally */
-                const worldRanks = getRanks(_.cloneDeep(rankings), this.user.id);
+                const worldRanks = getRanks(_.cloneDeep(rankings), loggedInUserInRanks);
                 this.worldRanks = worldRanks.ranks;
 
                 /* User's ranks */
-                this.userCountryRank = countryRanks.loggedInUser.rank;
-                this.userWorldRank = worldRanks.loggedInUser.rank;
+                if (loggedInUserInRanks !== undefined) {
+                    this.userCountryRank = countryRanks.loggedInUserRank;
+                    this.userWorldRank = worldRanks.loggedInUserRank;
+                }
             },
             startPoll() {
                 this.poller.id = setTimeout(this.refreshBoards, this.poller.interval)
@@ -125,46 +137,61 @@
      * Returns the ranks for the board along with the loggedIn User's rank object
      * 
      * @param {Array} rankings
-     * @param {Number} loggedInUserId
+     * @param {Object} loggedInUser
      * 
      * @return {Object}
      */
-    function getRanks(rankings, loggedInUserId) {
-        const loggedInUser = _.find(rankings, {id: loggedInUserId});
-
+    function getRanks(rankings, loggedInUser) {
         rankings = _.forEach(rankings, (user, key) => {
             user.rank = key + 1;
-            user.pointsDifference = user.courseScore - loggedInUser.courseScore;
+            user.pointsDifference = (loggedInUser !== undefined) ? user.courseScore - loggedInUser.courseScore : false;
 
-            user.pointsDifference = (user.pointsDifference > 0) ? user.pointsDifference : false;
+            if (user.pointsDifference && user.pointsDifference <= 0) {
+                user.pointsDifference = false;
+            }
 
-            if (user.id == loggedInUserId) {
+            if (loggedInUser !== undefined && user.id == loggedInUser.id) {
                 user.isLoggedInUser = true;
+                loggedInUser.rank = user.rank;
             }
         });
+
+        /* Handle the case where there are fewer than 10 Users who have completed the course  */
+        if (rankings.length <= 9) {
+            return {
+                loggedInUserRank: (loggedInUser !== undefined) ? loggedInUser.rank : false,
+                ranks: rankings
+            }
+        }
         
         /* Get the groups we are interested in */
         const topThree = _.take(rankings, 3);
         const bottomThree = _.takeRight(rankings, 3);
-        const loggedInUserThree = (loggedInUser.rank == 1 || loggedInUser.rank == 2) ? topThree : _.slice(rankings, loggedInUser.rank - 2, loggedInUser.rank + 1);
-        
+
         let topTier = [], middleTier = [], bottomTier = [];
         /* Manipulate results to show the rankings we are interested in */
-        if (loggedInUser.rank <= 4) {
-            // User in Top Tier
-            topTier = _.union(topThree, loggedInUserThree);
-            
-            bottomTier = bottomThree;
-        } else if (bottomThree[0].rank - loggedInUser.rank < 2 ) {
-            // User in Bottom Tier
-            bottomTier = _union(loggedInUserThree, bottomThree);
-
+        if (loggedInUser === undefined) {
             topTier = topThree;
+            bottomTier = bottomThree;
         } else {
-            // User in Middle Tier
-            topTier = topThree;
-            bottomTier = bottomThree;
-            middleTier = loggedInUserThree;
+            const loggedInUserThree = (loggedInUser.rank == 1 || loggedInUser.rank == 2) ? topThree : _.slice(rankings, loggedInUser.rank - 2, loggedInUser.rank + 1);
+            
+            if (loggedInUser.rank <= 4) {
+                // User in Top Tier
+                topTier = _.union(topThree, loggedInUserThree);
+                
+                bottomTier = bottomThree;
+            } else if (bottomThree[0].rank - loggedInUser.rank < 2 ) {
+                // User in Bottom Tier
+                bottomTier = _.union(loggedInUserThree, bottomThree);
+
+                topTier = topThree;
+            } else {
+                // User in Middle Tier
+                topTier = topThree;
+                bottomTier = bottomThree;
+                middleTier = loggedInUserThree;
+            }
         }
 
         if (middleTier.length == 0) {
@@ -195,7 +222,7 @@
         middleTier[middleTier.length - 1].nonSequentialEnd = true;
 
         return {
-            loggedInUser: loggedInUser,
+            loggedInUserRank: (loggedInUser !== undefined) ? loggedInUser.rank : false,
             ranks: [
                 ...topTier,
                 ...middleTier,

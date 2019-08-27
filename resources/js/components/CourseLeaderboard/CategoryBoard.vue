@@ -1,26 +1,29 @@
 <template>
-    <ul>
-        <div v-for="slot in slots" 
-            :key="slot.index"
-        >
-            <hr v-if="slot.nonSequentialStart" />
-            <li class="courseRanking__rankItem" :class="{'isLoggedInUser': slot.isLoggedInUser}">
-                <div class="position">
-                    {{ slot.rank }}
-                </div>
-                <div class="info">
-                    <div>
-                        {{ slot.name }}
+    <div>
+        <span v-if="slots.length == 0">No ranks available</span>
+        <ul v-else>
+            <div v-for="slot in slots" 
+                :key="slot.index"
+            >
+                <hr v-if="slot.nonSequentialStart" />
+                <li class="courseRanking__rankItem" :class="{'isLoggedInUser': slot.isLoggedInUser}">
+                    <div class="position">
+                        {{ slot.rank }}
                     </div>
-                    <div class="score">
-                        {{ slot.courseScore }} PTS
-                        <span v-if="slot.pointsDifference">(+{{ slot.pointsDifference }})</span>
+                    <div class="info">
+                        <div>
+                            {{ slot.name }}
+                        </div>
+                        <div class="score">
+                            {{ slot.courseScore }} PTS
+                            <span v-if="slot.pointsDifference">(+{{ slot.pointsDifference }})</span>
+                        </div>
                     </div>
-                </div>
-            </li>
-            <hr v-if="slot.nonSequentialEnd" />
-        </div>
-    </ul>
+                </li>
+                <hr v-if="slot.nonSequentialEnd" />
+            </div>
+        </ul>
+    </div>
 </template>
 
 <style scoped>
