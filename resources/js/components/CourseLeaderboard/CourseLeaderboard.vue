@@ -134,7 +134,7 @@
 
     /**
      * Figures out which ranks to display
-     * Returns the ranks for the board along with the loggedIn User's rank object
+     * Returns the ranks for the board along with the loggedIn User's rank
      * 
      * @param {Array} rankings
      * @param {Object} loggedInUser
@@ -178,12 +178,12 @@
             
             if (loggedInUser.rank <= 4) {
                 // User in Top Tier
-                topTier = _.union(topThree, loggedInUserThree);
+                topTier = _.sortBy(_.union(topThree, loggedInUserThree), 'rank');
                 
                 bottomTier = bottomThree;
             } else if (bottomThree[0].rank - loggedInUser.rank < 2 ) {
                 // User in Bottom Tier
-                bottomTier = _.union(loggedInUserThree, bottomThree);
+                bottomTier = _.sortBy(_.union(loggedInUserThree, bottomThree), 'rank');
 
                 topTier = topThree;
             } else {
