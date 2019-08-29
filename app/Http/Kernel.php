@@ -3,6 +3,8 @@
 namespace App\Http;
 
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
+use Illuminate\Console\Scheduling\Schedule;
+use App\Course;
 
 class Kernel extends HttpKernel
 {
@@ -77,4 +79,22 @@ class Kernel extends HttpKernel
         \Illuminate\Routing\Middleware\SubstituteBindings::class,
         \Illuminate\Auth\Middleware\Authorize::class,
     ];
+
+    /**
+     * Define the application's command schedule.
+     *
+     * @param  \Illuminate\Console\Scheduling\Schedule  $schedule
+     * @return void
+     */
+    protected function schedule(Schedule $schedule)
+    {
+        $schedule->call(function () {
+            $courses = App\Course::all();
+            foreach ($courses as $course) {
+                $course->updateLeaderboard();
+
+                logger()->info('[SCHEDULED TASK] Leaderboard Updated for Course ID ' . $this->id . ': ' . $this->title);
+            }
+        })->everyMinute();
+    }
 }

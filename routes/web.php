@@ -48,3 +48,11 @@ Route::get('/grade/{quizAnswer}/{score}', 'QuizAnswerController@grade')
 Route::get('/user', function(Request $request) {
     return response()->json(auth()->user());
 });
+
+Route::get('/update-leaderboards', function(Request $request) {
+    $courses = App\Course::all();
+    foreach ($courses as $course) {
+        $course->updateLeaderboard();
+        echo "Course Leaderboard Updated: " . $course->id . "<br>";
+    }
+});

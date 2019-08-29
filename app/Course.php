@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
+use Illuminate\Support\Facades\DB;
+
 /**
  * @property string $title
  * @property string $slug
@@ -69,9 +71,32 @@ final class Course extends Model
         $cacheAddress = 'leaderboard.course-' . $this->id;
 
         /* Sort the users by course score */
-        $leaderboard = $this->completedBy()->sortByDesc(function(Authenticatable $user, int $key) {
-            return $user->courseScore($this);
-        });
+        $users = DB::table('course_enrollments')
+        ->join('users', 'course_enrollments.user_id', 'users.id')
+        ->where('course_id', '=', $this->id)->get();
+
+        $quizzes = DB::table('quizzes')
+        ->join('lessons', function($join) {
+            $join->on('quizzes.lesson_id', '=', 'lessons.id')
+            ->where('lessons.course_id', '=', $this->id);
+        })->pluck('quizzes.id');
+
+        $numQuizzes = $quizzes->count();
+
+        foreach ($users as $key => $user) {
+            $quizAnswers = DB::table('quiz_answers')
+            ->where('quiz_answers.user_id', '=', $user->id)
+            ->whereIn('quiz_answers.quiz_id', $quizzes)
+            ->get('score');
+
+            if ($quizAnswers->count() == $numQuizzes) {
+                $user->courseScore = $quizAnswers->sum('score');
+            } else {
+                unset($users[$key]);
+            }
+        }
+
+        $leaderboard = $users->sortByDesc('courseScore');
 
         /* I'm using cache as this is data that would be fetched often and could be sped up with memcache */
         cache()->put($cacheAddress, $leaderboard);

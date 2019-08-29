@@ -8,7 +8,7 @@ use Illuminate\Database\Seeder;
 
 class QuizAnswersSeeder extends Seeder
 {
-    private const NUMBER_OF_USERS = 200;
+    private const NUMBER_OF_USERS = 2000;
 
     /** @var \Illuminate\Support\Collection */
     private $countryIds;
@@ -53,14 +53,14 @@ class QuizAnswersSeeder extends Seeder
     private function generateAnswersForEnrolment(CourseEnrollment $enrollment)
     {
         $allQuizesFromCourse = $enrollment->course->quizzes;
-        //$quizzesToGenerateAnswers = $allQuizesFromCourse->take(random_int(0, $allQuizesFromCourse->count()));
-         $quizzesToGenerateAnswers = $allQuizesFromCourse;
+        $quizzesToGenerateAnswers = $allQuizesFromCourse->take(random_int(0, $allQuizesFromCourse->count()));
+        // $quizzesToGenerateAnswers = $allQuizesFromCourse;
 
         $quizzesToGenerateAnswers->each(function (Quiz $quiz) use ($enrollment) {
             factory(QuizAnswer::class)->create([
                 'quiz_id' => $quiz->id,
                 'user_id' => $enrollment->user->id,
-                'score' => random_int(1, $quiz->max_score),
+                'score' => random_int(0, $quiz->max_score),
                 // 'score' => random_int(1, $quiz->max_score),
             ]);
         });

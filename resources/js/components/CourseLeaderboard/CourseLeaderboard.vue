@@ -218,8 +218,13 @@
             }
         }
 
-        middleTier[0].nonSequentialStart = true;
-        middleTier[middleTier.length - 1].nonSequentialEnd = true;
+        if (middleTier[0].rank != topTier[topTier.length - 1].rank + 1) {
+            middleTier[0].nonSequentialStart = true;
+        }
+
+        if (middleTier[middleTier.length - 1].rank != bottomTier[0].rank - 1) {
+            middleTier[middleTier.length - 1].nonSequentialEnd = true;
+        }
 
         return {
             loggedInUserRank: (loggedInUser !== undefined) ? loggedInUser.rank : false,
